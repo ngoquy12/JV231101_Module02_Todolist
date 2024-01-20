@@ -1,8 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import Modal_Delete from "./Modal_Delete";
 
 export default function TodoList() {
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [idDelete, setIdDelete] = useState(null);
+
+  // Tạo một tham chiếu
+  const inputRef = useRef();
+
+  useEffect(() => {
+    // Focus vào input
+    inputRef.current.focus();
+  }, []);
+
   const [jobLocal, setJobLocal] = useState(() => {
     // Lấy dữ liệu trên local về
     const jobs = JSON.parse(localStorage.getItem("listJob")) || [];
@@ -69,8 +81,47 @@ export default function TodoList() {
     setJobLocal(updateJob);
   };
 
+  // Hàm hiển thị modal xác nhận xóa
+  const handleShowConfirmDelete = (id) => {
+    // Lưu trữ id cần xóa vào trong state
+    setIdDelete(id);
+    // Cập nhật lại trạng thái của biến showModal
+    setShowModal(true);
+  };
+
+  // Hàm đóng modal xác nhận xóa
+  const handleCloseConfirmDelete = () => {
+    // Cập nhật lại trạng thái của biến showModal
+    setShowModal(false);
+  };
+
+  // Hàm xóa một công việc theo id
+  const deleteJob = () => {
+    // Tiến hành lọc ra những phần tử khác với id cần xóa
+    const filterJob = jobLocal.filter((job) => job.id !== idDelete);
+
+    // Lưu dữ liệu lên local
+    localStorage.setItem("listJob", JSON.stringify(filterJob));
+
+    // Lấy dữ liệu mới nhất từ local và cập nhật lại cho state
+    setJobLocal(filterJob);
+
+    // Ẩn modal confirm delete
+    handleCloseConfirmDelete();
+  };
+
   return (
     <>
+      {/* Hiển thị và ẩn modal xác nhận xóa */}
+      {/* {showModal ? <Modal_Delete /> : <></>} */}
+      {showModal && (
+        <Modal_Delete
+          idDelete={idDelete}
+          close={handleCloseConfirmDelete}
+          deleteJob={deleteJob}
+        />
+      )}
+
       <div className="flex justify-center items-center h-screen">
         <div className="border w-[60%] shadow-sm py-[56px] px-[56px] rounded-md">
           <h1 className="text-center text-[20px] font-bold">
@@ -79,6 +130,7 @@ export default function TodoList() {
           <form className="flex gap-3 my-4" onSubmit={handleAddJob}>
             <div className="flex-1">
               <input
+                ref={inputRef}
                 onChange={handleChange}
                 value={inputValue}
                 className="h-9 border outline-none px-4 w-full"
@@ -111,7 +163,10 @@ export default function TodoList() {
                 </div>
                 <div>
                   <i className="fa-solid fa-pen-to-square"></i>
-                  <i className="fa-solid fa-trash"></i>
+                  <i
+                    onClick={() => handleShowConfirmDelete(job.id)}
+                    className="fa-solid fa-trash"
+                  ></i>
                 </div>
               </li>
             ))}
